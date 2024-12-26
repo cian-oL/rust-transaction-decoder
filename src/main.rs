@@ -1,10 +1,11 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::io::Read;
 
 #[derive(Debug, Serialize)]
 struct Transaction {
     version: u32,
     inputs: Vec<Input>,
+    outputs: Vec<Output>,
 }
 
 #[derive(Debug, Serialize)]
@@ -13,6 +14,12 @@ struct Input {
     output_index: u32,
     script_sig: String, // TODO: remove explicit string typing
     sequence: u32,
+}
+
+#[derive(Debug, Serialize)]
+struct Output {
+    amount: u64,
+    script_pubkey: String,
 }
 
 fn read_compact_size(transaction_bytes: &mut &[u8]) -> u64 {
@@ -51,6 +58,13 @@ fn read_u32(transaction_bytes: &mut &[u8]) -> u32 {
     // implicit return in rust -> last statement w/o semi-colon
 }
 
+fn read_u64(transaction_bytes: &mut &[u8]) -> u64 {
+    let mut buffer = [0; 8];
+    transaction_bytes.read(&mut buffer).unwrap();
+
+    u64::from_le_bytes(buffer)
+}
+
 fn read_txid(transaction_bytes: &mut &[u8]) -> String {
     let mut buffer = [0; 32];
     transaction_bytes.read(&mut buffer).unwrap();
@@ -71,7 +85,10 @@ fn main() {
     let transaction_bytes = hex::decode(transaction_hex).unwrap(); // result type must be unwrapped
     let mut bytes_slice = transaction_bytes.as_slice();
 
+    // decode version
     let version = read_u32(&mut bytes_slice);
+
+    // decode inputs
     let input_count = read_compact_size(&mut bytes_slice);
     let mut inputs = vec![];
 
@@ -89,7 +106,27 @@ fn main() {
         });
     }
 
-    let transaction = Transaction { version, inputs };
+    // decode outputs
+    let output_count = read_compact_size(&mut bytes_slice);
+    let mut outputs = vec![];
+
+    for _ in 0..output_count {
+        let amount = read_u64(&mut bytes_slice);
+        let script_pubkey = read_script(&mut bytes_slice);
+
+        outputs.push(Output {
+            amount,
+            script_pubkey,
+        });
+    }
+
+    // initialise decoded transaction
+
+    let transaction = Transaction {
+        version,
+        inputs,
+        outputs,
+    };
 
     println!(
         "Transaction {}",
