@@ -44,12 +44,11 @@ fn read_amount(transaction_bytes: &mut &[u8]) -> Amount {
     Amount::from_sat(u64::from_le_bytes(buffer))
 }
 
-fn read_txid(transaction_bytes: &mut &[u8]) -> String {
+fn read_txid(transaction_bytes: &mut &[u8]) -> Txid {
     let mut buffer = [0; 32];
     transaction_bytes.read(&mut buffer).unwrap();
-    buffer.reverse();
 
-    hex::encode(buffer)
+    Txid::from_bytes(buffer)
 }
 
 fn read_script(transaction_bytes: &mut &[u8]) -> String {

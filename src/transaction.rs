@@ -11,7 +11,7 @@ pub struct Transaction {
 
 #[derive(Debug, Serialize)]
 pub struct Input {
-    pub txid: String, // TODO: remove explicit string typing
+    pub txid: Txid,
     pub output_index: u32,
     pub script_sig: String, // TODO: remove explicit string typing
     pub sequence: u32,
