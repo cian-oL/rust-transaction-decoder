@@ -1,6 +1,5 @@
 mod transaction;
 
-use sha2::{Digest, Sha256};
 use std::error::Error;
 use std::io::{Error as IoError, Read};
 
@@ -60,18 +59,6 @@ fn read_script(transaction_bytes: &mut &[u8]) -> Result<String, IoError> {
     Ok(hex::encode(buffer))
 }
 
-fn hash_raw_transaction(raw_transaction: &[u8]) -> Txid {
-    let mut hasher = Sha256::new();
-    hasher.update(&raw_transaction);
-    let hash1 = hasher.finalize();
-
-    let mut hasher = Sha256::new();
-    hasher.update(hash1);
-    let hash2 = hasher.finalize();
-
-    Txid::from_bytes(hash2.into())
-}
-
 pub fn decode(transaction_hex: String) -> Result<String, Box<dyn Error>> {
     let transaction_bytes =
         hex::decode(transaction_hex).map_err(|e| format!("Hex decode error: {}", e))?;
@@ -90,7 +77,7 @@ pub fn decode(transaction_hex: String) -> Result<String, Box<dyn Error>> {
         let script_sig = read_script(&mut bytes_slice)?;
         let sequence = read_u32(&mut bytes_slice)?;
 
-        inputs.push(Input {
+        inputs.push(TxIn {
             txid,
             output_index,
             script_sig,
@@ -106,7 +93,7 @@ pub fn decode(transaction_hex: String) -> Result<String, Box<dyn Error>> {
         let amount = read_amount(&mut bytes_slice)?;
         let script_pubkey = read_script(&mut bytes_slice)?;
 
-        outputs.push(Output {
+        outputs.push(TxOut {
             amount,
             script_pubkey,
         });
